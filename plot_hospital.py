@@ -18,10 +18,9 @@ def address2lng(address, url, ak):
     else:
         return 0
 
-def etl(path, ak):
+def etl(path, ak, url):
 	data = pd.read_excel(path)
 	df = data[['连锁企业', '行政区域', '门店地址']]
-	url = 'http://api.map.baidu.com/geocoding/v3/?address={address}&output=json&ak={ak}&callback=showLocation'
 	df['flag1'] = df.apply(lambda x: x['行政区域'][:2]==x['门店地址'][:2], axis=1)
 	df['address'] = df.apply(lambda x: '上海'+x['门店地址'] if x['flag1'] else '上海'+x['行政区域']+'区'+x['门店地址'], axis=1)
 	df['num'] = df['address'].apply(lambda x: address2lng(x, url, ak))
@@ -43,9 +42,9 @@ def etl(path, ak):
 	return df
 
 # 画图，这是所有点的图，在加上自己的额外添加的坐标点
-def plot_whole(your_address, df):
+def plot_whole(your_address, df, url):
 	china_address = your_address
-	your = address2lng(china_address, url)
+	your = address2lng(china_address, url, ak)
 
 	m = folium.Map(location=[35,110],zoom_start=2)    #绘制Map，开始缩放程度是5倍
 	for address, lng, lat in zip(df['门店地址'], df['lng'], df['lat']):
@@ -54,9 +53,9 @@ def plot_whole(your_address, df):
 	m.save('whole_hospital.html')
 
 # 取经纬度在[x-0.05, x+0.05]范围内的坐标点
-def plot_near(your_address, df):
+def plot_near(your_address, df, url):
 	china_address = your_address
-	your = address2lng(china_address, url)
+	your = address2lng(china_address, url, ak)
 	df['help'] = df['lng'].apply(lambda x: (your[0] - 0.05) <= x <= (your[0] + 0.05))
 	df = df[df['help']]
 	df['help'] = df['lat'].apply(lambda x: (your[1] - 0.05) <= x <= (your[1] + 0.05))
@@ -71,8 +70,9 @@ def plot_near(your_address, df):
 if __name__ == '__main__':
 	# ak为百度地图开发者项目创建后的key
 	ak = 'UG0yUO3cYe5PVsOc4TfbYGXEFIHafCXD'
+	url = 'http://api.map.baidu.com/geocoding/v3/?address={address}&output=json&ak={ak}&callback=showLocation'
 	path = '1000个网点-分区优化.xlsx'
 	your_address = input('Please input your address: ')
-	df = etl(path, ak)
-	plot_near(your_address, df)
+	df = etl(path, ak, url)
+	plot_near(your_address, df, url)
 	# plot_whole(your_address, df)
